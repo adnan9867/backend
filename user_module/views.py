@@ -1,45 +1,162 @@
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 from .constants import *
-from .models import User
-from .serializers import UserSerializer
+from .models import Post
+from .serializers import *
 
 
 class UserSignupView(ModelViewSet):
     permission_classes = [AllowAny]
     queryset = User.objects.all()
-    serializer_class = UserSerializer
-    http_method_names = ['post']
+    serializer_class = UserSignupSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer = UserSignupSerializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "You have successfully signup"},
+                                status=status.HTTP_200_OK)
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: serializer.errors}, )
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserMetaMaskView(ModelViewSet):
+class UserLoginViewSet(ModelViewSet):
     serializer_class = None
     permission_classes = (AllowAny,)
 
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            metamask = data.get('metamask')
-            if not metamask:
-                return Response({SUCCESS: False, ERROR: "Metamask is required"}, status=status.HTTP_400_BAD_REQUEST)
-            user = User.objects.filter(metamask=metamask).first()
+            user = User.objects.filter(email=data['email']).first()  # get user by email
             if not user:
-                return Response({SUCCESS: False, ERROR: "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-            refresh = RefreshToken.for_user(user)
+                return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "User not found"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not user.check_password(data['password']):  # check password
+                return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "Password is incorrect"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            refresh = RefreshToken.for_user(user)  # generate JWT token
             response = {
                 'access_token': str(refresh.access_token),
                 'refresh_token': str(refresh),
                 'user': user.id,
             }
-            if user:
-                return Response({SUCCESS: True, MESSAGE: "Metamask exists", DATA: response},
-                                status=status.HTTP_200_OK)
+            return Response({SUCCESS: True, MESSAGE: "You have successfully login", DATA: response},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             return Response({SUCCESS: False, "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            """ Get user profile by using token """
+            serializer = UserProfileSerializer(request.user)
+            return Response({SUCCESS: True, STATUS_CODE: 200, DATA: serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileListViewSet(ModelViewSet):
+    permission_classes = [IsAdminUser]
+    serializer_class = UserProfileSerializer
+
+    def list(self, request, *args, **kwargs):
+        """ Only Admin can list all users """
+        try:
+            user = User.objects.all()
+            serializer = self.serializer_class(user, many=True)
+            return Response({SUCCESS: True, STATUS_CODE: 200, DATA: serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class PostViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PostSerializer
+    queryset = Post.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        """ Get all posts by login user"""
+        try:
+            posts = Post.objects.filter(user=request.user)
+            serializer = self.serializer_class(posts, many=True)
+            return Response({SUCCESS: True, STATUS_CODE: 200, DATA: serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, *args, **kwargs):
+        """ Create new post """
+        try:
+            data = request.data
+            data['user'] = request.user.id
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "You have successfully created new post"},
+                                status=status.HTTP_200_OK)
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: serializer.errors}, )
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """ Update post by id """
+        try:
+            data = request.data
+            pk = data['id']
+            post = Post.objects.filter(id=pk).first()
+            if not post:
+                return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "Post not found"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            serializer = PostSerializer(post, data=data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "You have successfully updated post"},
+                                status=status.HTTP_200_OK)
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: serializer.errors}, )
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        """ Delete post by id """
+        try:
+            pk = request.query_params.get('id')
+            post = Post.objects.filter(id=pk, user__id=request.user.id).first()
+            if not post:
+                return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "Post not found"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            post.delete()
+            return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "You have successfully deleted post"},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class PostListViewSet(ModelViewSet):
+    permission_classes = [AllowAny]
+    serializer_class = PostSerializer
+    queryset = Post.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        """ Get all posts """
+        try:
+            posts = Post.objects.all()
+            serializer = self.serializer_class(posts, many=True)
+            return Response({SUCCESS: True, STATUS_CODE: 200, DATA: serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
+                            status=status.HTTP_400_BAD_REQUEST)
