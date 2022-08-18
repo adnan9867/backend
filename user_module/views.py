@@ -5,7 +5,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 from .constants import *
 from .models import User
-
+from .serializers import UserSerializer
 
 
 class UserSignupView(ModelViewSet):
