@@ -13,7 +13,6 @@ class User(AbstractUser):
 
 class Post(models.Model):
     title = models.CharField(max_length=300, unique=True)
-    url = models.SlugField(max_length=300)
     content = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_in_posts')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,9 +20,13 @@ class Post(models.Model):
 
 
 class PostLikeDislike(models.Model):
+    CHOICES_IN_REACTION = [
+        ("Like", 'Like'),
+        ("Dislike", 'Dislike')
+    ]
+
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_in_post_like_dislikes')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_in_post_like_dislikes')
-    is_like = models.BooleanField(default=False)
-    is_dislike = models.BooleanField(default=False)
+    reaction = models.CharField(max_length=20, choices=CHOICES_IN_REACTION, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
