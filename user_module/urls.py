@@ -16,8 +16,6 @@ urlpatterns = [
     path('post_listing', PostListViewSet.as_view({'get': 'list'}), name='post_listing'),
 
     # Post Reaction Endpoints
-    path('post_like', PostReactionViewSet.as_view({'post': 'post_like'}), name='post_like'),
-    path('post_dislike', PostReactionViewSet.as_view({'post': 'post_dislike'}), name='post_dislike'),
-    path('remove_reaction', PostReactionViewSet.as_view({'delete': 'destroy'}), name='remove_reaction'),
+    path('post_like_unlike', PostReactionViewSet.as_view({'post': 'post_like'}), name='post_like'),
 
 ]

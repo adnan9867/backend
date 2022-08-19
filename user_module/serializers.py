@@ -36,7 +36,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.SerializerMethodField('get_like')
-    dislike_count = serializers.SerializerMethodField('get_dislike')
 
     class Meta:
         model = Post
@@ -53,38 +52,13 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_like(self, obj):
         try:
-            likes = PostLikeDislike.objects.filter(reaction__iexact='Like',  post__id=obj.id)
+            likes = PostLikes.objects.filter(post__id=obj.id)
             return likes.count()
-        except:
-            return None
-
-    def get_dislike(self, obj):
-        try:
-            dislike = PostLikeDislike.objects.filter(reaction__iexact='Dislike', post__id=obj.id)
-            return dislike.count()
         except:
             return None
 
 
 class PostReactionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PostLikeDislike
+        model = PostLikes
         fields = '__all__'
-
-    def create(self, validated_data):
-        obj = PostLikeDislike.objects.create(**validated_data)
-        return obj
-
-    def update(self, instance, validated_data):
-        if validated_data.get('reaction') == 'Like' and instance.reaction == 'Like':
-            raise serializers.ValidationError(_('Post is already liked'))
-        if validated_data.get('reaction') == 'Dislike' and instance.reaction == 'Dislike':
-            raise serializers.ValidationError(_('Post is already disliked'))
-        if instance.reaction == 'Like' and validated_data.get('reaction') == 'Dislike':
-            instance.reaction = 'Dislike'
-            instance.save()
-
-        if instance.reaction == 'Dislike' and validated_data.get('reaction') == 'Like':
-            instance.reaction = 'Like'
-            instance.save()
-        return instance

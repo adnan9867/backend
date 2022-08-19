@@ -4,4 +4,4 @@ from user_module.models import *
 
 admin.site.register(User)
 admin.site.register(Post)
-admin.site.register(PostLikeDislike)
+admin.site.register(PostLikes)

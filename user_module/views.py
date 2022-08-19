@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 from .constants import *
-from .models import Post, PostLikeDislike
+from .models import Post, PostLikes
 from .serializers import *
 
 
@@ -167,60 +167,23 @@ class PostListViewSet(ModelViewSet):
 
 class PostReactionViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
-    queryset = PostLikeDislike.objects.all()
+    queryset = PostLikes.objects.all()
     serializer_class = PostReactionSerializer
 
     def post_like(self, request, *args, **kwargs):
         try:
             data = request.data
-            data['reaction'] = 'Like'
             data['user'] = request.user.id
             reaction = self.queryset.filter(user__id=request.user.id, post__id=data['post']).first()
             if reaction:
-                serializer = self.serializer_class(reaction, data=data, partial=True)
-                if serializer.is_valid(raise_exception=True):
-                    serializer.save()
-                    return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "Post like successfully"},
-                                    status=status.HTTP_200_OK)
+                reaction.delete()
+                return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "Post unlike successfully"},
+                                status=status.HTTP_200_OK)
             serializer = self.serializer_class(data=data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "Post like successfully"},
                                 status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    def post_dislike(self, request, *args, **kwargs):
-        try:
-            data = request.data
-            data['reaction'] = 'Dislike'
-            data['user'] = request.user.id
-            reaction = self.queryset.filter(user__id=request.user.id, post__id=data['post']).first()
-            if reaction:
-                serializer = self.serializer_class(reaction, data=data, partial=True)
-                if serializer.is_valid(raise_exception=True):
-                    serializer.save()
-                    return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "Post dislike successfully"},
-                                    status=status.HTTP_200_OK)
-            serializer = self.serializer_class(data=data)
-            if serializer.is_valid(raise_exception=True):
-                serializer.save()
-                return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "Post dislike successfully"},
-                                status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            post_id = request.query_params.get('post')
-            reaction = PostLikeDislike.objects.filter(user__id=request.user.id, post__id=post_id).first()
-            if not reaction:
-                return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "No reaction found"},
-                                status=status.HTTP_400_BAD_REQUEST)
-            reaction.delete()
-            return Response({SUCCESS: True, ERROR: "{} remove successfully".format(reaction.reaction)})
         except Exception as e:
             return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: str(e.args[0])},
                             status=status.HTTP_400_BAD_REQUEST)

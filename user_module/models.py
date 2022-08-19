@@ -19,14 +19,8 @@ class Post(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class PostLikeDislike(models.Model):
-    CHOICES_IN_REACTION = [
-        ("Like", 'Like'),
-        ("Dislike", 'Dislike')
-    ]
-
+class PostLikes(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_in_post_like_dislikes')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_in_post_like_dislikes')
-    reaction = models.CharField(max_length=20, choices=CHOICES_IN_REACTION, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
