@@ -11,6 +11,14 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['email']
 
 
+class UserHolidayInfo(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_in_holiday')
+    country = models.CharField(max_length=30)
+    holiday_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class Post(models.Model):
     title = models.CharField(max_length=300, unique=True)
     content = models.TextField()
