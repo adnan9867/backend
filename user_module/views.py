@@ -149,7 +149,7 @@ class PostViewSet(ModelViewSet):
 
 
 class PostListViewSet(ModelViewSet):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = PostSerializer
     queryset = Post.objects.all()
 
