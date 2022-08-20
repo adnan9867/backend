@@ -104,7 +104,8 @@ class PostViewSet(ModelViewSet):
             serializer = self.serializer_class(data=data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "Post created successfully"},
+                return Response({SUCCESS: True, STATUS_CODE: 200, DATA: serializer.data
+                                    , MESSAGE: "Post created successfully"},
                                 status=status.HTTP_200_OK)
             return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: serializer.errors}, )
         except Exception as e:

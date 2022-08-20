@@ -13,6 +13,7 @@ urlpatterns = [
     path('post', PostViewSet.as_view({'get': 'list', 'post': 'create'}), name='post'),
     path('update_post', PostViewSet.as_view({'put': 'update'}), name='update_post'),
     path('delete_post', PostViewSet.as_view({'delete': 'destroy'}), name='delete_post'),
+    path('user_posts', PostViewSet.as_view({'get': 'list'}), name='user_posts'),
     path('post_listing', PostListViewSet.as_view({'get': 'list'}), name='post_listing'),
 
     # Post Reaction Endpoints
