@@ -1,3 +1,5 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -8,8 +10,7 @@ from .serializers import *
 
 
 class UserSignupView(ModelViewSet):
-    permission_classes = [AllowAny]
-    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
     serializer_class = UserSignupSerializer
 
     def create(self, request, *args, **kwargs):
@@ -32,11 +33,11 @@ class UserLoginViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            user = User.objects.filter(email=data['email']).first()  # get user by email
+            user = User.objects.filter(email=data['email']).last()  # get user by email
             if not user:
                 return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "User not found"},
                                 status=status.HTTP_400_BAD_REQUEST)
-            if not user.check_password(data['password']):  # check password
+            if not user.check_password(data['password'].strip()):  # check password
                 return Response({SUCCESS: False, STATUS_CODE: 400, ERROR: "Password is incorrect"},
                                 status=status.HTTP_400_BAD_REQUEST)
             refresh = RefreshToken.for_user(user)  # generate JWT token
