@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils.translation import ugettext_lazy as _
 from user_module.models import *
+from user_module.utils import user_holiday_info
 
 
 class UserSignupSerializer(serializers.ModelSerializer):
@@ -13,6 +14,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
+        request = self.context['request']
         if User.objects.filter(email=validated_data['email']).exists():  # get user by email
             raise serializers.ValidationError(_('Email already exists'))  # raise error if email already exists
         if User.objects.filter(username=validated_data['username']).exists():  # get user by username
@@ -25,6 +27,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
         )  # create user
         user.set_password(validated_data['password'])  # set password
         user.save()
+        user_holiday_info(user=user, request=request)
         return user
 
 

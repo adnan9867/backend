@@ -14,7 +14,7 @@ class UserSignupView(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            serializer = UserSignupSerializer(data=request.data)
+            serializer = UserSignupSerializer(data=request.data, context={'request': request})
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response({SUCCESS: True, STATUS_CODE: 200, MESSAGE: "You have successfully signup"},
