@@ -30,7 +30,6 @@ def test_signup(api_client):
     }
     url = reverse('sign_up')
     response = api_client.post(url, data=json.dumps(valid_payload), content_type='application/json', )
-    print(response.json())
     assert response.status_code == 200
 
 
@@ -46,7 +45,6 @@ def test_login(api_client):
     }
     url = reverse('login')
     response = api_client.post(url, data=json.dumps(valid_payload), content_type='application/json', )
-    print(response.json())
     assert response.status_code == 200
 
 
@@ -54,7 +52,6 @@ def test_login(api_client):
 def test_get_profile(api_client):
     url = reverse('get_user_profile')
     response = api_client.get(url)
-    print(response.json())
     assert response.status_code == 200
 
 
